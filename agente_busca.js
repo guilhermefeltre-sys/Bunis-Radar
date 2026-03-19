@@ -13,12 +13,12 @@ if (fs.existsSync(CONFIG_FILE)) {
 }
 
 const BAIRROS = [
-  { label: 'Itaim Bibi', url_zap: 'https://www.zapimoveis.com.br/venda/imoveis/sp+sao-paulo+zona-sul+itaim-bibi/?tipo=coberturas&preco=0,8000000', url_vr: 'https://www.vivareal.com.br/venda/sp/sao-paulo/zona-sul/itaim-bibi/cobertura_residencial/?preco-ate=8000000' },
-  { label: 'Vila Nova Conceicao', url_zap: 'https://www.zapimoveis.com.br/venda/imoveis/sp+sao-paulo+zona-sul+vl-nv-conceicao/?tipo=coberturas&preco=0,8000000', url_vr: 'https://www.vivareal.com.br/venda/sp/sao-paulo/zona-sul/vila-nova-conceicao/cobertura_residencial/?preco-ate=8000000' },
-  { label: 'Jardim Europa', url_zap: 'https://www.zapimoveis.com.br/venda/imoveis/sp+sao-paulo+zona-oeste+jd-europa/?tipo=coberturas&preco=0,8000000', url_vr: 'https://www.vivareal.com.br/venda/sp/sao-paulo/zona-oeste/jardim-europa/cobertura_residencial/?preco-ate=8000000' },
+  { label: 'Itaim Bibi', url_zap: 'https://www.zapimoveis.com.br/venda/cobertura/sp+sao-paulo+zona-sul+itaim-bibi/?preco=0,8000000&quartos=2,3,4,5', url_vr: 'https://www.vivareal.com.br/venda/sp/sao-paulo/zona-sul/itaim-bibi/cobertura_residencial/?quartos=2,3,4,5&preco-ate=8000000' },
+  { label: 'Vila Nova Conceicao', url_zap: 'https://www.zapimoveis.com.br/venda/cobertura/sp+sao-paulo+zona-sul+vl-nv-conceicao/?preco=0,8000000&quartos=2,3,4,5', url_vr: 'https://www.vivareal.com.br/venda/sp/sao-paulo/zona-sul/vila-nova-conceicao/cobertura_residencial/?quartos=2,3,4,5&preco-ate=8000000' },
+  { label: 'Jardim Europa', url_zap: 'https://www.zapimoveis.com.br/venda/cobertura/sp+sao-paulo+zona-oeste+jd-europa/?preco=0,8000000&quartos=2,3,4,5', url_vr: 'https://www.vivareal.com.br/venda/sp/sao-paulo/zona-oeste/jardim-europa/cobertura_residencial/?quartos=2,3,4,5&preco-ate=8000000' },
 ];
 
-const SITES_PREMIUM = ['jardins-co.com.br','taylorimoveis.com','poloresidencial.com.br','oneluxo.com.br','ph15.com','lopesprime.com.br','npiconsultoria.com.br','kazaboutique.com.br','uprealestate.com.br','coelhodafonseca.com.br','bnsir.com.br','lpslopes.com.br','kauffmann.com.br','luxuryestate.com'];
+const SITES_PREMIUM = ['jardins-co.com.br','taylorimoveis.com','poloresidencial.com.br','oneluxo.com.br','ph15.com','lopesprime.com.br','npiconsultoria.com.br','kazaboutique.com.br','uprealestate.com.br','coelhodafonseca.com.br','bnsir.com.br','lpslopes.com.br','kauffmann.com.br','luxuryestate.com','lello.com.br','brazil-sothebys.com','christiesrealestate.com','engelvoelkers.com'];
 
 function log(msg) {
   const line = '[' + new Date().toLocaleString('pt-BR') + '] ' + msg;
