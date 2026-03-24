@@ -18,6 +18,15 @@ const BAIRROS = [
   { label: 'Jardim Europa', url_zap: 'https://www.zapimoveis.com.br/venda/cobertura/sp+sao-paulo+zona-oeste+jd-europa/?preco=0,8000000&quartos=2,3,4,5', url_vr: 'https://www.vivareal.com.br/venda/sp/sao-paulo/zona-oeste/jardim-europa/cobertura_residencial/?quartos=2,3,4,5&preco-ate=8000000' },
 ];
 
+const SITES_LEILAO = [
+  { site: 'leilao.caixa.gov.br', nome: 'CAIXA' },
+  { site: 'imoveis.santander.com.br', nome: 'Santander' },
+  { site: 'imoveis.itau.com.br', nome: 'Itau' },
+  { site: 'imoveisbradesco.com.br', nome: 'Bradesco' },
+  { site: 'zuk.com.br', nome: 'Zuk' },
+  { site: 'megaleiloes.com.br', nome: 'Mega Leiloes' },
+];
+
 const SITES_PREMIUM = ['jardins-co.com.br','taylorimoveis.com','poloresidencial.com.br','oneluxo.com.br','ph15.com','lopesprime.com.br','npiconsultoria.com.br','kazaboutique.com.br','uprealestate.com.br','coelhodafonseca.com.br','bnsir.com.br','lpslopes.com.br','kauffmann.com.br','luxuryestate.com','lello.com.br','brazil-sothebys.com','christiesrealestate.com','engelvoelkers.com'];
 
 function log(msg) {
@@ -146,6 +155,79 @@ async function enviarEmail(lista) {
   } catch(e) { log('Erro email: ' + e.message); }
 }
 
+async function buscarLeilao(browser, siteLeilao) {
+  const label = siteLeilao.nome;
+  const site = siteLeilao.site;
+  log('[Leilao] Buscando em ' + label + '...');
+  const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  await page.setViewport({ width: 1280, height: 900 });
+  const results = [];
+  const TERMOS = ['cobertura', 'penthouse', 'duplex', 'apartamento 200m'];
+  const BAIRROS_BUSCA = ['Itaim Bibi', 'Vila Nova Conceicao', 'Jardim Europa', 'Jardins', 'Moema', 'Pinheiros', 'Higienopolis', 'Campo Belo', 'Perdizes', 'Vila Mariana', 'Tatuape', 'Analia Franco'];
+  try {
+    for (var t = 0; t < TERMOS.length; t++) {
+      var q = encodeURIComponent(TERMOS[t] + ' leilao Sao Paulo site:' + site);
+      await page.goto('https://www.google.com/search?q=' + q, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await new Promise(function(r){ setTimeout(r, 1500); });
+      var links = await page.evaluate(function(s) {
+        return Array.from(document.querySelectorAll('a[href]')).map(function(a){ return a.href; }).filter(function(h){ return h.indexOf(s) > -1 && h.indexOf('google') === -1; }).slice(0, 3);
+      }, site);
+      for (var i = 0; i < links.length; i++) {
+        try {
+          await page.goto(links[i], { waitUntil: 'domcontentloaded', timeout: 12000 });
+          await new Promise(function(r){ setTimeout(r, 1200); });
+          var dado = await page.evaluate(function(lnk, nomeLabel) {
+            var txt = document.body.innerText || '';
+            var pM = txt.match(/R\$\s*([\d.,]+)\s*(mil(?:hao|hoes)?|M|mi)?/i);
+            var aM = txt.match(/(\d+)\s*m[2\xb2]/i);
+            var qM = txt.match(/(\d+)\s*quarto/i);
+            var ocupado = txt.toLowerCase().indexOf('ocupado') > -1 ? 'Ocupado' : 'Desocupado';
+            var tipo = 'Extrajudicial';
+            if (txt.toLowerCase().indexOf('judicial') > -1) tipo = 'Judicial';
+            if (txt.toLowerCase().indexOf('venda direta') > -1) tipo = 'Venda Direta';
+            if (!pM) return null;
+            var preco = parseFloat(pM[1].replace(/\./g,'').replace(',','.'));
+            if (pM[2]) preco = preco * 1000000;
+            if (preco < 100000) preco = preco * 1000000;
+            if (preco > 8000000 || preco < 300000) return null;
+            var area = aM ? parseInt(aM[1]) : 0;
+            if (area < 200) return null;
+            return {
+              preco: Math.round(preco), area: area,
+              quartos: qM ? parseInt(qM[1]) : 3, vagas: 0,
+              addr: document.title.slice(0, 60),
+              link: lnk, ocupado: ocupado, tipoLeilao: tipo
+            };
+          }, links[i], label);
+          if (dado) {
+            // Detecta bairro pelo texto da pagina
+            var bairroEncontrado = 'Itaim Bibi';
+            var pageTxt = await page.evaluate(function(){ return document.body.innerText.toLowerCase(); });
+            for (var b = 0; b < BAIRROS_BUSCA.length; b++) {
+              if (pageTxt.indexOf(BAIRROS_BUSCA[b].toLowerCase()) > -1) {
+                if (['Itaim Bibi','Vila Nova Conceicao','Jardim Europa'].indexOf(BAIRROS_BUSCA[b]) > -1) {
+                  bairroEncontrado = BAIRROS_BUSCA[b];
+                }
+                break;
+              }
+            }
+            dado.bairro = bairroEncontrado;
+            dado.tipo = 'Cobertura';
+            dado.fonte = label;
+            dado.isLeilao = true;
+            results.push(dado);
+          }
+        } catch(e) {}
+        await new Promise(function(r){ setTimeout(r, 800); });
+      }
+    }
+    log('[Leilao] ' + label + ': ' + results.length + ' imoveis');
+  } catch(err) { log('[Leilao] Erro ' + label + ': ' + err.message); }
+  await page.close().catch(function(){});
+  return results;
+}
+
 async function main() {
   var headless = process.argv.indexOf('--visual') === -1 ? 'new' : false;
   log('==== AGENTE v8 - Puppeteer + Sites Premium | headless=' + headless + ' ====');
@@ -163,6 +245,12 @@ async function main() {
       await sleep(1000);
     }
   }
+  // Busca leiloes
+  for (var l = 0; l < SITES_LEILAO.length; l++) {
+    novos = novos.concat(await buscarLeilao(browser, SITES_LEILAO[l]));
+    await new Promise(function(r){ setTimeout(r, 1000); });
+  }
+
   await browser.close();
   log('Total encontrado: ' + novos.length);
   var hoje = new Date().toISOString().slice(0, 10);
